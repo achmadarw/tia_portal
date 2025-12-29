@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { assignmentService } from '@/services/assignment.service';
 import { patternService } from '@/services/pattern.service';
@@ -38,6 +38,7 @@ export default function AssignmentsPage() {
     const [hasChanges, setHasChanges] = useState(false);
     const [patternModalOpen, setPatternModalOpen] = useState(false);
     const [shiftModalOpen, setShiftModalOpen] = useState(false);
+    const isInitializedRef = useRef(false);
 
     const queryClient = useQueryClient();
 
@@ -71,20 +72,41 @@ export default function AssignmentsPage() {
         queryFn: () => shiftService.getShifts(),
     });
 
+    // Fetch shift assignments for the selected month
+    const { data: shiftAssignments = [] } = useQuery({
+        queryKey: ['shift-assignments', monthString],
+        queryFn: () =>
+            rosterService.getShiftAssignments({
+                month: monthString,
+            }),
+    });
+
     // Initialize assignments state from currentAssignments
-    useEffect(() => {
+    const initializedAssignments = useMemo(() => {
         if (currentAssignments && currentAssignments.length > 0) {
-            const initialAssignments: Record<number, number> = {};
+            const result: Record<number, number> = {};
             currentAssignments.forEach((assignment) => {
                 if (assignment.pattern_id) {
-                    initialAssignments[assignment.user_id] =
-                        assignment.pattern_id;
+                    result[assignment.user_id] = assignment.pattern_id;
                 }
             });
-            setAssignments(initialAssignments);
+            return result;
+        }
+        return {};
+    }, [currentAssignments]);
+
+    // Sync assignments when initialized data changes (using ref to avoid cascading renders)
+    // eslint-disable-next-line react-compiler/react-compiler
+    useEffect(() => {
+        if (
+            Object.keys(initializedAssignments).length > 0 &&
+            !isInitializedRef.current
+        ) {
+            isInitializedRef.current = true;
+            setAssignments(initializedAssignments);
             setHasChanges(false);
         }
-    }, [currentAssignments]);
+    }, [initializedAssignments]);
 
     // Save assignments mutation
     const saveMutation = useMutation({
@@ -116,6 +138,11 @@ export default function AssignmentsPage() {
             });
         },
         onSuccess: (data) => {
+            // Invalidate shift assignments to refresh calendar
+            queryClient.invalidateQueries({
+                queryKey: ['shift-assignments', monthString],
+            });
+
             // Show success message
             alert(
                 `Roster generated successfully!\n\n` +
@@ -151,12 +178,14 @@ export default function AssignmentsPage() {
         setSelectedMonth((prev) => subMonths(prev, 1));
         setAssignments({});
         setHasChanges(false);
+        isInitializedRef.current = false;
     };
 
     const handleNextMonth = () => {
         setSelectedMonth((prev) => addMonths(prev, 1));
         setAssignments({});
         setHasChanges(false);
+        isInitializedRef.current = false;
     };
 
     const handleAutoAssign = () => {
@@ -328,6 +357,7 @@ export default function AssignmentsPage() {
                                     userAssignments={userAssignments}
                                     patterns={patterns}
                                     shifts={shifts}
+                                    shiftAssignments={shiftAssignments}
                                     onPatternChange={handlePatternChange}
                                     onPrevMonth={handlePrevMonth}
                                     onNextMonth={handleNextMonth}

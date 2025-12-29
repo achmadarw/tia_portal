@@ -4,36 +4,15 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2, Copy, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { Shift } from '@/types/shift';
 
 interface PatternGridProps {
     personilCount: number;
     patternData: number[][];
     onChange: (data: number[][]) => void;
     disabled?: boolean;
+    shifts?: Shift[];
 }
-
-const SHIFT_OPTIONS = [
-    {
-        value: 0,
-        label: 'OFF',
-        color: 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300',
-    },
-    {
-        value: 1,
-        label: 'Pagi',
-        color: 'bg-sky-100 text-sky-700 hover:bg-sky-200 border-sky-300',
-    },
-    {
-        value: 2,
-        label: 'Siang',
-        color: 'bg-amber-100 text-amber-700 hover:bg-amber-200 border-amber-300',
-    },
-    {
-        value: 3,
-        label: 'Sore',
-        color: 'bg-violet-100 text-violet-700 hover:bg-violet-200 border-violet-300',
-    },
-];
 
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -42,6 +21,7 @@ export function PatternGrid({
     patternData,
     onChange,
     disabled = false,
+    shifts = [],
 }: PatternGridProps) {
     const [selectedCell, setSelectedCell] = useState<{
         row: number;
@@ -172,8 +152,18 @@ export function PatternGrid({
                         {/* Card Body - 7 day grid */}
                         <div className='p-3'>
                             <div className='grid grid-cols-7 gap-2'>
-                                {row.map((shiftNum, dayIndex) => {
-                                    const shift = SHIFT_OPTIONS[shiftNum];
+                                {row.map((shiftId, dayIndex) => {
+                                    const shift =
+                                        shiftId === 0
+                                            ? {
+                                                  id: 0,
+                                                  name: 'OFF',
+                                                  code: 'OFF',
+                                                  color: '#9CA3AF',
+                                              }
+                                            : shifts.find(
+                                                  (s) => s.id === shiftId
+                                              );
                                     const isWeekend = dayIndex >= 5;
                                     const isSelected =
                                         selectedCell?.row === rowIndex &&
@@ -206,7 +196,6 @@ export function PatternGrid({
                                                 className={cn(
                                                     'w-full aspect-square rounded-lg border-2 text-xs font-bold transition-all flex items-center justify-center',
                                                     'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1',
-                                                    shift.color,
                                                     isSelected &&
                                                         'ring-2 ring-primary ring-offset-1 scale-110 shadow-lg',
                                                     disabled &&
@@ -214,8 +203,21 @@ export function PatternGrid({
                                                     !disabled &&
                                                         'hover:scale-110 hover:shadow-lg cursor-pointer active:scale-95'
                                                 )}
+                                                style={{
+                                                    backgroundColor: shift
+                                                        ? `${shift.color}20`
+                                                        : '#F3F4F6',
+                                                    color:
+                                                        shift?.color ||
+                                                        '#6B7280',
+                                                    borderColor:
+                                                        shift?.color ||
+                                                        '#D1D5DB',
+                                                }}
                                             >
-                                                {shift.label}
+                                                {shift?.code ||
+                                                    shift?.name ||
+                                                    '?'}
                                             </button>
                                         </div>
                                     );
@@ -258,24 +260,43 @@ export function PatternGrid({
                             </p>
                         </div>
                         <div className='grid grid-cols-2 gap-3 mb-4'>
-                            {SHIFT_OPTIONS.map((shift) => (
-                                <button
-                                    key={shift.value}
-                                    type='button'
-                                    onClick={() =>
-                                        handleShiftChange(
-                                            shift.value.toString()
-                                        )
-                                    }
-                                    className={cn(
-                                        'py-4 px-4 rounded-lg border-2 text-sm font-bold transition-all',
-                                        'hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary active:scale-95',
-                                        shift.color
-                                    )}
-                                >
-                                    {shift.label}
-                                </button>
-                            ))}
+                            {/* OFF Option */}
+                            <button
+                                type='button'
+                                onClick={() => handleShiftChange('0')}
+                                className={cn(
+                                    'py-4 px-4 rounded-lg border-2 text-sm font-bold transition-all',
+                                    'hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary active:scale-95',
+                                    'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300'
+                                )}
+                            >
+                                OFF
+                            </button>
+                            {/* Database Shifts */}
+                            {shifts
+                                .filter((s) => s.is_active)
+                                .map((shift) => (
+                                    <button
+                                        key={shift.id}
+                                        type='button'
+                                        onClick={() =>
+                                            handleShiftChange(
+                                                shift.id.toString()
+                                            )
+                                        }
+                                        className={cn(
+                                            'py-4 px-4 rounded-lg border-2 text-sm font-bold transition-all',
+                                            'hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary active:scale-95'
+                                        )}
+                                        style={{
+                                            backgroundColor: `${shift.color}20`,
+                                            color: shift.color,
+                                            borderColor: shift.color,
+                                        }}
+                                    >
+                                        {shift.code || shift.name}
+                                    </button>
+                                ))}
                         </div>
                         <Button
                             type='button'

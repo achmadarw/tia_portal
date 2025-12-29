@@ -39,7 +39,8 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, AlertCircle, CheckCircle2, Lightbulb } from 'lucide-react';
 import { PatternGrid } from './pattern-grid';
 import { rosterPatternService } from '@/services/roster-pattern.service';
-import type { RosterPattern } from '@/types/roster-pattern';
+import { shiftService } from '@/services/shift.service';
+import type { Shift } from '@/types/shift';
 
 interface PatternEditorProps {
     open: boolean;
@@ -53,9 +54,9 @@ const patternFormSchema = z.object({
     description: z.string().optional(),
     personil_count: z.number().min(3).max(10),
     pattern_data: z
-        .array(z.array(z.number().min(0).max(3)))
+        .array(z.array(z.number().min(0)))
         .min(3, 'At least 3 rows required'),
-    is_default: z.boolean().default(false),
+    is_default: z.boolean(),
 });
 
 type PatternFormValues = z.infer<typeof patternFormSchema>;
@@ -98,6 +99,12 @@ export function PatternEditor({
 }: PatternEditorProps) {
     const [activeTab, setActiveTab] = useState('basic');
     const queryClient = useQueryClient();
+
+    // Fetch shifts from database
+    const { data: shifts = [] } = useQuery<Shift[]>({
+        queryKey: ['shifts'],
+        queryFn: () => shiftService.getShifts(),
+    });
 
     // Fetch existing pattern if editing
     const { data: existingPattern, isLoading } = useQuery({
@@ -451,6 +458,7 @@ export function PatternEditor({
                                                             field.onChange
                                                         }
                                                         disabled={isPending}
+                                                        shifts={shifts}
                                                     />
                                                 </FormControl>
                                                 <FormMessage />

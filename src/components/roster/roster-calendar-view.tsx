@@ -28,11 +28,18 @@ interface UserAssignment {
     pattern_name: string | null;
 }
 
+interface ShiftAssignment {
+    user_id: number;
+    shift_id: number;
+    assignment_date: string;
+}
+
 interface RosterCalendarViewProps {
     selectedMonth: Date;
     userAssignments: UserAssignment[];
     patterns: Pattern[];
     shifts?: Shift[];
+    shiftAssignments?: ShiftAssignment[];
     onPatternChange: (userId: number, patternId: string) => void;
     onPrevMonth: () => void;
     onNextMonth: () => void;
@@ -44,6 +51,7 @@ export function RosterCalendarView({
     userAssignments,
     patterns,
     shifts,
+    shiftAssignments = [],
     onPatternChange,
     onPrevMonth,
     onNextMonth,
@@ -93,12 +101,38 @@ export function RosterCalendarView({
     // Calculate roster data for each user
     const rosterData = userAssignments.map((assignment) => {
         const pattern = patterns?.find((p) => p.id === assignment.pattern_id);
-        const shifts = pattern
-            ? Array.from({ length: daysInMonth }, (_, dayIndex) => {
-                  const patternIndex = dayIndex % 7;
-                  return pattern.pattern_data[patternIndex];
-              })
-            : Array(daysInMonth).fill(0);
+
+        // Create shifts array for the month
+        const shifts = Array.from({ length: daysInMonth }, (_, dayIndex) => {
+            const day = dayIndex + 1;
+            const dateStr = format(
+                new Date(
+                    selectedMonth.getFullYear(),
+                    selectedMonth.getMonth(),
+                    day
+                ),
+                'yyyy-MM-dd'
+            );
+
+            // Check if there's an actual shift assignment for this date
+            const actualAssignment = shiftAssignments.find(
+                (sa) =>
+                    sa.user_id === assignment.user_id &&
+                    sa.assignment_date === dateStr
+            );
+
+            if (actualAssignment) {
+                // Use actual shift assignment from database
+                return actualAssignment.shift_id;
+            } else if (pattern) {
+                // Fallback to pattern data if no actual assignment
+                const patternIndex = dayIndex % 7;
+                return pattern.pattern_data[patternIndex];
+            } else {
+                // No pattern and no assignment = OFF (0)
+                return 0;
+            }
+        });
 
         return {
             ...assignment,

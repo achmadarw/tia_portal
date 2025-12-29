@@ -38,9 +38,15 @@ export function ShiftManagementModal({
         code: '',
         start_time: '07:00',
         end_time: '15:00',
-        color: '#2196F3',
+        color: '',
         description: '',
     });
+
+    // Generate random bright color
+    const generateRandomColor = () => {
+        const hue = Math.floor(Math.random() * 360);
+        return `hsl(${hue}, 70%, 50%)`;
+    };
 
     // Fetch shifts
     const { data: shifts, isLoading } = useQuery({
@@ -91,7 +97,7 @@ export function ShiftManagementModal({
             code: '',
             start_time: '07:00',
             end_time: '15:00',
-            color: '#2196F3',
+            color: '',
             description: '',
         });
         setEditingShift(null);
@@ -120,7 +126,11 @@ export function ShiftManagementModal({
                 data: formData,
             });
         } else {
-            createMutation.mutate(formData);
+            // Generate random color for new shift
+            createMutation.mutate({
+                ...formData,
+                color: generateRandomColor(),
+            });
         }
     };
 
@@ -201,35 +211,6 @@ export function ShiftManagementModal({
                             </div>
 
                             <div className='grid grid-cols-2 gap-4'>
-                                <div className='space-y-2'>
-                                    <Label htmlFor='color'>Color *</Label>
-                                    <div className='flex gap-2'>
-                                        <Input
-                                            id='color'
-                                            type='color'
-                                            value={formData.color}
-                                            onChange={(e) =>
-                                                setFormData({
-                                                    ...formData,
-                                                    color: e.target.value,
-                                                })
-                                            }
-                                            className='w-20 h-10'
-                                        />
-                                        <Input
-                                            value={formData.color}
-                                            onChange={(e) =>
-                                                setFormData({
-                                                    ...formData,
-                                                    color: e.target.value,
-                                                })
-                                            }
-                                            placeholder='#2196F3'
-                                            className='flex-1'
-                                        />
-                                    </div>
-                                </div>
-
                                 <div className='space-y-2'>
                                     <Label htmlFor='start_time'>
                                         Start Time *

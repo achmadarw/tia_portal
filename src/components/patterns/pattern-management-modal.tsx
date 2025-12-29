@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { patternService, type Pattern } from '@/services/pattern.service';
+import { shiftService } from '@/services/shift.service';
+import type { Shift } from '@/types/shift';
 import {
     Dialog,
     DialogContent,
@@ -25,15 +27,6 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { cn } from '@/lib/utils';
-
-const SHIFT_LABELS = ['OFF', 'Pagi', 'Siang', 'Sore'];
-const SHIFT_COLORS = [
-    'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-    'bg-sky-100 text-sky-700 dark:bg-sky-900 dark:text-sky-300',
-    'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
-    'bg-violet-100 text-violet-700 dark:bg-violet-900 dark:text-violet-300',
-];
 
 interface PatternManagementModalProps {
     open: boolean;
@@ -58,6 +51,12 @@ export function PatternManagementModal({
     const { data: patterns, isLoading } = useQuery({
         queryKey: ['patterns'],
         queryFn: () => patternService.getPatterns(true),
+    });
+
+    // Fetch shifts from database
+    const { data: shifts = [] } = useQuery<Shift[]>({
+        queryKey: ['shifts'],
+        queryFn: () => shiftService.getShifts(),
     });
 
     const deleteMutation = useMutation({
@@ -224,18 +223,51 @@ export function PatternManagementModal({
                                                                 }
                                                             </div>
                                                             <div
-                                                                className={cn(
-                                                                    'px-2 py-1.5 rounded-md text-xs font-medium transition-transform hover:scale-105',
-                                                                    SHIFT_COLORS[
-                                                                        shift
-                                                                    ]
-                                                                )}
+                                                                className='px-2 py-1.5 rounded-md text-xs font-medium transition-transform hover:scale-105'
+                                                                style={{
+                                                                    backgroundColor:
+                                                                        shift ===
+                                                                        0
+                                                                            ? '#F3F4F6'
+                                                                            : `${
+                                                                                  shifts.find(
+                                                                                      (
+                                                                                          s
+                                                                                      ) =>
+                                                                                          s.id ===
+                                                                                          shift
+                                                                                  )
+                                                                                      ?.color ||
+                                                                                  '#6B7280'
+                                                                              }20`,
+                                                                    color:
+                                                                        shift ===
+                                                                        0
+                                                                            ? '#6B7280'
+                                                                            : shifts.find(
+                                                                                  (
+                                                                                      s
+                                                                                  ) =>
+                                                                                      s.id ===
+                                                                                      shift
+                                                                              )
+                                                                                  ?.color ||
+                                                                              '#6B7280',
+                                                                }}
                                                             >
-                                                                {
-                                                                    SHIFT_LABELS[
-                                                                        shift
-                                                                    ]
-                                                                }
+                                                                {shift === 0
+                                                                    ? 'OFF'
+                                                                    : shifts.find(
+                                                                          (s) =>
+                                                                              s.id ===
+                                                                              shift
+                                                                      )?.code ||
+                                                                      shifts.find(
+                                                                          (s) =>
+                                                                              s.id ===
+                                                                              shift
+                                                                      )?.name ||
+                                                                      '?'}
                                                             </div>
                                                         </div>
                                                     )
