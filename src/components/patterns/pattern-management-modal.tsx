@@ -229,21 +229,6 @@ export function PatternManagementModal({
                                                                         shift ===
                                                                         0
                                                                             ? '#F3F4F6'
-                                                                            : `${
-                                                                                  shifts.find(
-                                                                                      (
-                                                                                          s
-                                                                                      ) =>
-                                                                                          s.id ===
-                                                                                          shift
-                                                                                  )
-                                                                                      ?.color ||
-                                                                                  '#6B7280'
-                                                                              }20`,
-                                                                    color:
-                                                                        shift ===
-                                                                        0
-                                                                            ? '#6B7280'
                                                                             : shifts.find(
                                                                                   (
                                                                                       s
@@ -253,6 +238,11 @@ export function PatternManagementModal({
                                                                               )
                                                                                   ?.color ||
                                                                               '#6B7280',
+                                                                    color:
+                                                                        shift ===
+                                                                        0
+                                                                            ? '#6B7280'
+                                                                            : '#FFFFFF',
                                                                 }}
                                                             >
                                                                 {shift === 0

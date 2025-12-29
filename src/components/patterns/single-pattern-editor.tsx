@@ -100,6 +100,18 @@ export function SinglePatternEditor({
         }
     }, [existingPattern, form]);
 
+    // Reset form when opening for create (no patternId)
+    React.useEffect(() => {
+        if (open && !patternId) {
+            form.reset({
+                name: '',
+                description: '',
+                pattern_data: [0, 0, 0, 0, 0, 0, 0],
+            });
+            setSelectedDay(null);
+        }
+    }, [open, patternId, form]);
+
     // Create/Update mutations
     const createMutation = useMutation({
         mutationFn: patternService.createPattern,
@@ -262,17 +274,18 @@ export function SinglePatternEditor({
                                                                 >
                                                                     <div
                                                                         className={cn(
-                                                                            'text-xs font-bold uppercase tracking-wide',
+                                                                            'text-[10px] font-bold uppercase tracking-wide whitespace-nowrap',
                                                                             isWeekend
                                                                                 ? 'text-red-600'
                                                                                 : 'text-slate-600'
                                                                         )}
                                                                     >
-                                                                        {
-                                                                            DAY_NAMES[
-                                                                                dayIndex
-                                                                            ]
-                                                                        }
+                                                                        {DAY_NAMES[
+                                                                            dayIndex
+                                                                        ].substring(
+                                                                            0,
+                                                                            3
+                                                                        )}
                                                                     </div>
                                                                     <button
                                                                         type='button'
@@ -297,12 +310,13 @@ export function SinglePatternEditor({
                                                                         )}
                                                                         style={{
                                                                             backgroundColor:
-                                                                                shift
-                                                                                    ? `${shift.color}20`
-                                                                                    : '#F3F4F6',
-                                                                            color:
                                                                                 shift?.color ||
-                                                                                '#6B7280',
+                                                                                '#F3F4F6',
+                                                                            color:
+                                                                                shiftId ===
+                                                                                0
+                                                                                    ? '#6B7280'
+                                                                                    : '#FFFFFF',
                                                                             borderColor:
                                                                                 shift?.color ||
                                                                                 '#D1D5DB',

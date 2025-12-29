@@ -246,6 +246,39 @@ export function ShiftManagementModal({
                                 </div>
                             </div>
 
+                            {/* Color preview and regenerate button for editing */}
+                            {editingShift && (
+                                <div className='space-y-2'>
+                                    <Label>Shift Color</Label>
+                                    <div className='flex gap-2 items-center'>
+                                        <div
+                                            className='w-12 h-12 rounded-md border-2 border-gray-300'
+                                            style={{
+                                                backgroundColor: formData.color,
+                                            }}
+                                        />
+                                        <div className='flex-1'>
+                                            <p className='text-sm text-gray-600'>
+                                                {formData.color}
+                                            </p>
+                                        </div>
+                                        <Button
+                                            type='button'
+                                            variant='outline'
+                                            size='sm'
+                                            onClick={() =>
+                                                setFormData({
+                                                    ...formData,
+                                                    color: generateRandomColor(),
+                                                })
+                                            }
+                                        >
+                                            Generate New Color
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className='space-y-2'>
                                 <Label htmlFor='description'>Description</Label>
                                 <Textarea
