@@ -58,10 +58,11 @@ export default function AssignmentsPage() {
         queryFn: () => patternService.getPatterns(true),
     });
 
-    // Fetch active users
+    // Fetch active users (security role only)
     const { data: users, isLoading: loadingUsers } = useQuery({
-        queryKey: ['users', 'active'],
-        queryFn: () => userService.getUsers({ status: 'active' }),
+        queryKey: ['users', 'active', 'security'],
+        queryFn: () =>
+            userService.getUsers({ status: 'active', role: 'security' }),
     });
 
     // Fetch shifts for dynamic rendering

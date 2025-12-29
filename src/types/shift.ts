@@ -1,6 +1,7 @@
 export interface Shift {
     id: number;
     name: string;
+    code: string;
     start_time: string;
     end_time: string;
     color: string;

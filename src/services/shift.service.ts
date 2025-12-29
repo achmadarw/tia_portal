@@ -3,6 +3,7 @@ import type { Shift } from '@/types/shift';
 
 export interface CreateShiftInput {
     name: string;
+    code: string;
     start_time: string;
     end_time: string;
     color: string;
@@ -11,6 +12,7 @@ export interface CreateShiftInput {
 
 export interface UpdateShiftInput {
     name?: string;
+    code?: string;
     start_time?: string;
     end_time?: string;
     color?: string;

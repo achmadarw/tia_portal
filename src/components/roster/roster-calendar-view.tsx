@@ -79,7 +79,8 @@ export function RosterCalendarView({
                 config[shift.id] = {
                     label: shift.name,
                     color: shift.color,
-                    shortLabel: shift.name.charAt(0).toUpperCase(),
+                    shortLabel:
+                        shift.code || shift.name.charAt(0).toUpperCase(),
                 };
             });
 

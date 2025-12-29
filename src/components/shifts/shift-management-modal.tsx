@@ -35,6 +35,7 @@ export function ShiftManagementModal({
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [formData, setFormData] = useState<CreateShiftInput>({
         name: '',
+        code: '',
         start_time: '07:00',
         end_time: '15:00',
         color: '#2196F3',
@@ -87,6 +88,7 @@ export function ShiftManagementModal({
     const resetForm = () => {
         setFormData({
             name: '',
+            code: '',
             start_time: '07:00',
             end_time: '15:00',
             color: '#2196F3',
@@ -100,6 +102,7 @@ export function ShiftManagementModal({
         setEditingShift(shift);
         setFormData({
             name: shift.name,
+            code: shift.code,
             start_time: shift.start_time,
             end_time: shift.end_time,
             color: shift.color,
@@ -175,6 +178,29 @@ export function ShiftManagementModal({
                                     />
                                 </div>
 
+                                <div className='space-y-2'>
+                                    <Label htmlFor='code'>
+                                        Code (1-3 chars) *
+                                    </Label>
+                                    <Input
+                                        id='code'
+                                        value={formData.code}
+                                        onChange={(e) =>
+                                            setFormData({
+                                                ...formData,
+                                                code: e.target.value
+                                                    .toUpperCase()
+                                                    .slice(0, 3),
+                                            })
+                                        }
+                                        placeholder='e.g., P, SI, MO'
+                                        maxLength={3}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className='grid grid-cols-2 gap-4'>
                                 <div className='space-y-2'>
                                     <Label htmlFor='color'>Color *</Label>
                                     <div className='flex gap-2'>
