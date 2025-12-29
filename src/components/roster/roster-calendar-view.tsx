@@ -159,156 +159,169 @@ export function RosterCalendarView({
                 </Button>
             </div>
 
-            {/* Calendar Grid - Scrollable */}
-            <div className='overflow-x-auto'>
-                {/* Header Row */}
-                <div className='bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex min-w-max'>
-                    {/* Personnel Column Header - Sticky */}
-                    <div className='sticky left-0 z-20 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 w-64 flex-shrink-0 shadow-[2px_0_5px_rgba(0,0,0,0.05)]'>
-                        <div className='p-3'>
-                            <span className='text-sm font-semibold text-gray-900 dark:text-white'>
-                                Personnel
-                            </span>
-                        </div>
+            {/* Calendar Grid - Split Layout */}
+            <div className='flex'>
+                {/* Left Side - Personnel Column (Fixed) */}
+                <div className='w-64 flex-shrink-0 border-r border-gray-200 dark:border-gray-800'>
+                    {/* Personnel Header */}
+                    <div className='bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-3'>
+                        <span className='text-sm font-semibold text-gray-900 dark:text-white'>
+                            Personnel
+                        </span>
                     </div>
 
-                    {/* Days Header - Scrollable */}
-                    <div className='flex'>
-                        {days.map((day) => {
-                            const date = new Date(
-                                selectedMonth.getFullYear(),
-                                selectedMonth.getMonth(),
-                                day
-                            );
-                            const isWeekend =
-                                date.getDay() === 0 || date.getDay() === 6;
-
-                            return (
-                                <div
-                                    key={day}
-                                    className={cn(
-                                        'w-16 flex-shrink-0 p-2 text-center border-r border-gray-100 dark:border-gray-800',
-                                        isWeekend &&
-                                            'bg-orange-50/50 dark:bg-orange-950/10'
-                                    )}
-                                >
-                                    <div className='text-xs font-medium text-gray-900 dark:text-white'>
-                                        {day}
-                                    </div>
-                                    <div className='text-xs text-gray-500 dark:text-gray-400 mt-0.5'>
-                                        {format(date, 'EEE')}
-                                    </div>
+                    {/* Personnel Rows */}
+                    <div className='divide-y divide-gray-100 dark:divide-gray-800'>
+                        {rosterData.map((user) => (
+                            <div
+                                key={user.user_id}
+                                className='p-3 space-y-2 bg-white dark:bg-gray-950 hover:bg-gray-50/50 dark:hover:bg-gray-900/50 transition-colors min-h-[92px] flex flex-col justify-center'
+                            >
+                                <div className='font-semibold text-sm text-gray-900 dark:text-white'>
+                                    {user.user_name}
                                 </div>
-                            );
-                        })}
+                                <Select
+                                    value={user.pattern_id?.toString() || ''}
+                                    onValueChange={(value) =>
+                                        onPatternChange(user.user_id, value)
+                                    }
+                                >
+                                    <SelectTrigger className='h-8 text-xs w-full'>
+                                        <SelectValue placeholder='No pattern' />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {patterns?.map((pattern) => (
+                                            <SelectItem
+                                                key={pattern.id}
+                                                value={pattern.id.toString()}
+                                            >
+                                                {pattern.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
-                {/* Personnel Rows */}
-                <div className='divide-y divide-gray-100 dark:divide-gray-800'>
-                    {rosterData.map((user) => (
-                        <div
-                            key={user.user_id}
-                            className='flex hover:bg-gray-50/50 dark:hover:bg-gray-900/50 transition-colors min-w-max'
-                        >
-                            {/* Personnel Info - Sticky */}
-                            <div className='sticky left-0 z-10 bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 w-64 flex-shrink-0 shadow-[2px_0_5px_rgba(0,0,0,0.05)]'>
-                                <div className='p-3 space-y-2'>
-                                    <div className='font-semibold text-sm text-gray-900 dark:text-white'>
-                                        {user.user_name}
-                                    </div>
-                                    <Select
-                                        value={
-                                            user.pattern_id?.toString() || ''
-                                        }
-                                        onValueChange={(value) =>
-                                            onPatternChange(user.user_id, value)
-                                        }
+                {/* Right Side - Calendar Grid (Scrollable) */}
+                <div className='flex-1 overflow-x-auto'>
+                    <div className='min-w-max'>
+                        {/* Days Header */}
+                        <div className='bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex'>
+                            {days.map((day) => {
+                                const date = new Date(
+                                    selectedMonth.getFullYear(),
+                                    selectedMonth.getMonth(),
+                                    day
+                                );
+                                const isWeekend =
+                                    date.getDay() === 0 || date.getDay() === 6;
+
+                                return (
+                                    <div
+                                        key={day}
+                                        className={cn(
+                                            'w-16 flex-shrink-0 p-2 text-center border-r border-gray-100 dark:border-gray-800',
+                                            isWeekend &&
+                                                'bg-orange-50/50 dark:bg-orange-950/10'
+                                        )}
                                     >
-                                        <SelectTrigger className='h-8 text-xs w-full'>
-                                            <SelectValue placeholder='No pattern' />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {patterns?.map((pattern) => (
-                                                <SelectItem
-                                                    key={pattern.id}
-                                                    value={pattern.id.toString()}
+                                        <div className='text-xs font-medium text-gray-900 dark:text-white'>
+                                            {day}
+                                        </div>
+                                        <div className='text-xs text-gray-500 dark:text-gray-400 mt-0.5'>
+                                            {format(date, 'EEE')}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Days Rows */}
+                        <div className='divide-y divide-gray-100 dark:divide-gray-800'>
+                            {rosterData.map((user) => (
+                                <div
+                                    key={user.user_id}
+                                    className='flex hover:bg-gray-50/50 dark:hover:bg-gray-900/50 transition-colors min-h-[92px]'
+                                >
+                                    {/* Shift Cells */}
+                                    {user.shifts.map((shift, dayIndex) => {
+                                        const date = new Date(
+                                            selectedMonth.getFullYear(),
+                                            selectedMonth.getMonth(),
+                                            dayIndex + 1
+                                        );
+                                        const isWeekend =
+                                            date.getDay() === 0 ||
+                                            date.getDay() === 6;
+                                        const currentShiftConfig =
+                                            shiftConfig[shift as number];
+
+                                        if (!currentShiftConfig) {
+                                            console.warn(
+                                                `❌ Shift ID ${shift} tidak ditemukan di shiftConfig untuk user ${
+                                                    user.user_name
+                                                } pada hari ${dayIndex + 1}`
+                                            );
+                                            return (
+                                                <div
+                                                    key={dayIndex}
+                                                    className={cn(
+                                                        'w-16 flex-shrink-0 flex items-center justify-center p-2 border-r border-gray-100 dark:border-gray-800',
+                                                        isWeekend
+                                                            ? 'bg-gray-100 dark:bg-gray-900'
+                                                            : 'bg-white dark:bg-gray-950'
+                                                    )}
+                                                    title={`Shift ID ${shift} not found`}
                                                 >
-                                                    {pattern.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
+                                                    <div className='w-10 h-10 rounded-md bg-gray-200 dark:bg-gray-800 flex flex-col items-center justify-center text-[10px] font-bold text-gray-500'>
+                                                        <span>?</span>
+                                                        <span className='text-[8px]'>
+                                                            ID:{shift}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
 
-                            {/* Shift Cells - Scrollable */}
-                            <div className='flex'>
-                                {user.shifts.map((shift, dayIndex) => {
-                                    const date = new Date(
-                                        selectedMonth.getFullYear(),
-                                        selectedMonth.getMonth(),
-                                        dayIndex + 1
-                                    );
-                                    const isWeekend =
-                                        date.getDay() === 0 ||
-                                        date.getDay() === 6;
-                                    const currentShiftConfig =
-                                        shiftConfig[shift as number];
-
-                                    if (!currentShiftConfig) {
                                         return (
                                             <div
                                                 key={dayIndex}
                                                 className={cn(
-                                                    'w-16 flex-shrink-0 flex items-center justify-center p-2',
-                                                    isWeekend
-                                                        ? 'bg-gray-100 dark:bg-gray-900'
-                                                        : 'bg-white dark:bg-gray-950'
+                                                    'w-16 flex-shrink-0 p-2 flex items-center justify-center border-r border-gray-100 dark:border-gray-800',
+                                                    isWeekend &&
+                                                        'bg-gray-50/50 dark:bg-gray-900/50'
                                                 )}
                                             >
-                                                <div className='w-10 h-10 rounded-md bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-500'>
-                                                    ?
-                                                </div>
+                                                {user.pattern_id ? (
+                                                    <div
+                                                        className='w-10 h-10 rounded-md flex items-center justify-center text-sm font-bold border transition-all hover:scale-110 cursor-pointer'
+                                                        style={{
+                                                            backgroundColor: `${currentShiftConfig.color}30`,
+                                                            borderColor:
+                                                                currentShiftConfig.color,
+                                                            color: currentShiftConfig.color,
+                                                        }}
+                                                        title={`${user.user_name} - ${currentShiftConfig.label}`}
+                                                    >
+                                                        {
+                                                            currentShiftConfig.shortLabel
+                                                        }
+                                                    </div>
+                                                ) : (
+                                                    <div className='text-xs text-gray-300 dark:text-gray-700'>
+                                                        -
+                                                    </div>
+                                                )}
                                             </div>
                                         );
-                                    }
-
-                                    return (
-                                        <div
-                                            key={dayIndex}
-                                            className={cn(
-                                                'w-16 flex-shrink-0 p-2 flex items-center justify-center border-r border-gray-100 dark:border-gray-800',
-                                                isWeekend &&
-                                                    'bg-gray-50/50 dark:bg-gray-900/50'
-                                            )}
-                                        >
-                                            {user.pattern_id ? (
-                                                <div
-                                                    className='w-10 h-10 rounded-md flex items-center justify-center text-sm font-bold border transition-all hover:scale-110 cursor-pointer'
-                                                    style={{
-                                                        backgroundColor: `${currentShiftConfig.color}30`,
-                                                        borderColor:
-                                                            currentShiftConfig.color,
-                                                        color: currentShiftConfig.color,
-                                                    }}
-                                                    title={`${user.user_name} - ${currentShiftConfig.label}`}
-                                                >
-                                                    {
-                                                        currentShiftConfig.shortLabel
-                                                    }
-                                                </div>
-                                            ) : (
-                                                <div className='text-xs text-gray-300 dark:text-gray-700'>
-                                                    -
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                                    })}
+                                </div>
+                            ))}
                         </div>
-                    ))}
+                    </div>
                 </div>
             </div>
 
