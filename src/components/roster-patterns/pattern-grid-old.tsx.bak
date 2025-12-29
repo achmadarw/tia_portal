@@ -1,0 +1,328 @@
+'use client';
+
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Plus, Trash2, Copy, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+interface PatternGridProps {
+    personilCount: number;
+    patternData: number[][];
+    onChange: (data: number[][]) => void;
+    disabled?: boolean;
+}
+
+const SHIFT_OPTIONS = [
+    {
+        value: 0,
+        label: 'OFF',
+        shortLabel: 'OFF',
+        color: 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300',
+        badgeClass: 'bg-gray-200 text-gray-800 border-gray-300',
+    },
+    {
+        value: 1,
+        label: 'Pagi',
+        shortLabel: 'P',
+        color: 'bg-sky-100 text-sky-700 hover:bg-sky-200 border-sky-300',
+        badgeClass: 'bg-sky-200 text-sky-800 border-sky-400',
+    },
+    {
+        value: 2,
+        label: 'Siang',
+        shortLabel: 'S',
+        color: 'bg-amber-100 text-amber-700 hover:bg-amber-200 border-amber-300',
+        badgeClass: 'bg-amber-200 text-amber-800 border-amber-400',
+    },
+    {
+        value: 3,
+        label: 'Sore',
+        shortLabel: 'M',
+        color: 'bg-violet-100 text-violet-700 hover:bg-violet-200 border-violet-300',
+        badgeClass: 'bg-violet-200 text-violet-800 border-violet-400',
+    },
+];
+
+const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const DAY_SHORT = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+export function PatternGrid({
+    personilCount,
+    patternData,
+    onChange,
+    disabled = false,
+}: PatternGridProps) {
+    const [selectedCell, setSelectedCell] = useState<{
+        row: number;
+        day: number;
+    } | null>(null);
+
+    // Initialize pattern if empty
+    if (patternData.length === 0) {
+        const initialPattern = Array(personilCount)
+            .fill(null)
+            .map(() => Array(7).fill(0));
+        onChange(initialPattern);
+        return null;
+    }
+
+    // Adjust rows if personil count changed
+    if (patternData.length !== personilCount) {
+        const newPattern = Array(personilCount)
+            .fill(null)
+            .map((_, i) => patternData[i] || Array(7).fill(0));
+        onChange(newPattern);
+    }
+
+    const handleCellClick = (rowIndex: number, dayIndex: number) => {
+        if (disabled) return;
+        setSelectedCell({ row: rowIndex, day: dayIndex });
+    };
+
+    const handleShiftChange = (value: string) => {
+        if (!selectedCell || disabled) return;
+
+        const newPattern = patternData.map((row, rowIndex) =>
+            row.map((shift, dayIndex) => {
+                if (
+                    rowIndex === selectedCell.row &&
+                    dayIndex === selectedCell.day
+                ) {
+                    return parseInt(value);
+                }
+                return shift;
+            })
+        );
+
+        onChange(newPattern);
+        setSelectedCell(null);
+    };
+
+    const handleAddRow = () => {
+        if (disabled) return;
+        const newRow = Array(7).fill(0);
+        onChange([...patternData, newRow]);
+    };
+
+    const handleRemoveRow = (rowIndex: number) => {
+        if (disabled || patternData.length <= 1) return;
+        onChange(patternData.filter((_, i) => i !== rowIndex));
+    };
+
+    const handleDuplicateRow = (rowIndex: number) => {
+        if (disabled) return;
+        const rowToDuplicate = [...patternData[rowIndex]];
+        onChange([...patternData, rowToDuplicate]);
+    };
+
+    const handleClearRow = (rowIndex: number) => {
+        if (disabled) return;
+        const newPattern = patternData.map((row, i) =>
+            i === rowIndex ? Array(7).fill(0) : row
+        );
+        onChange(newPattern);
+    };
+
+    return (
+        <div className='space-y-4'>
+            {/* Grid */}
+            <div className='rounded-lg border overflow-hidden shadow-sm bg-white'>
+                <div className='overflow-x-auto'>
+                    <table className='w-full'>
+                        <thead>
+                            <tr className='bg-slate-50 border-b-2 border-slate-200'>
+                                <th className='px-4 py-3 text-left text-sm font-semibold border-r-2 border-slate-200 w-[100px] text-slate-700'>
+                                    Person
+                                </th>
+                                {DAY_NAMES.map((day, idx) => (
+                                    <th
+                                        key={day}
+                                        className={cn(
+                                            'px-2 py-3 text-center text-sm font-semibold min-w-[90px] text-slate-700',
+                                            idx >= 5 && 'bg-slate-100' // Weekend highlight
+                                        )}
+                                    >
+                                        {day}
+                                        {idx >= 5 && (
+                                            <span className='block text-[10px] text-slate-500 font-normal'>
+                                                Weekend
+                                            </span>
+                                        )}
+                                    </th>
+                                ))}
+                                <th className='px-4 py-3 text-center text-sm font-semibold border-l-2 border-slate-200 w-[140px] text-slate-700'>
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {patternData.map((row, rowIndex) => (
+                                <tr
+                                    key={rowIndex}
+                                    className='border-b hover:bg-slate-50 transition-colors'
+                                >
+                                    <td className='px-4 py-3 text-sm font-semibold border-r-2 border-slate-200 bg-slate-50 text-slate-700'>
+                                        Person {rowIndex + 1}
+                                    </td>
+                                    {row.map((shiftNum, dayIndex) => {
+                                        const shift = SHIFT_OPTIONS[shiftNum];
+                                        const isSelected =
+                                            selectedCell?.row === rowIndex &&
+                                            selectedCell?.day === dayIndex;
+                                        const isWeekend = dayIndex >= 5;
+
+                                        return (
+                                            <td
+                                                key={dayIndex}
+                                                className={cn(
+                                                    'px-2 py-3',
+                                                    isWeekend && 'bg-slate-50'
+                                                )}
+                                            >
+                                                <button
+                                                    type='button'
+                                                    onClick={() =>
+                                                        handleCellClick(
+                                                            rowIndex,
+                                                            dayIndex
+                                                        )
+                                                    }
+                                                    disabled={disabled}
+                                                    className={cn(
+                                                        'w-full py-2.5 px-3 rounded-md border-2 text-sm font-semibold transition-all',
+                                                        'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary',
+                                                        shift.color,
+                                                        isSelected &&
+                                                            'ring-2 ring-primary ring-offset-2 scale-105',
+                                                        disabled &&
+                                                            'opacity-50 cursor-not-allowed',
+                                                        !disabled &&
+                                                            'hover:scale-105 hover:shadow-md'
+                                                    )}
+                                                >
+                                                    {shift.label}
+                                                </button>
+                                            </td>
+                                        );
+                                    })}
+                                    <td className='px-2 py-3 border-l-2 border-slate-200 bg-slate-50'>
+                                        <div className='flex items-center justify-center gap-1'>
+                                            <Button
+                                                type='button'
+                                                variant='ghost'
+                                                size='sm'
+                                                onClick={() =>
+                                                    handleDuplicateRow(rowIndex)
+                                                }
+                                                disabled={disabled}
+                                                title='Duplicate row'
+                                                className='hover:bg-blue-100 hover:text-blue-700'
+                                            >
+                                                <Copy className='h-4 w-4' />
+                                            </Button>
+                                            <Button
+                                                type='button'
+                                                variant='ghost'
+                                                size='sm'
+                                                onClick={() =>
+                                                    handleClearRow(rowIndex)
+                                                }
+                                                disabled={disabled}
+                                                title='Clear row (set all to OFF)'
+                                                className='hover:bg-amber-100 hover:text-amber-700'
+                                            >
+                                                <Trash2 className='h-4 w-4' />
+                                            </Button>
+                                            {patternData.length > 1 && (
+                                                <Button
+                                                    type='button'
+                                                    variant='ghost'
+                                                    size='sm'
+                                                    onClick={() =>
+                                                        handleRemoveRow(
+                                                            rowIndex
+                                                        )
+                                                    }
+                                                    disabled={disabled}
+                                                    className='text-red-600 hover:bg-red-100 hover:text-red-700'
+                                                    title='Remove person from pattern'
+                                                >
+                                                    <Trash2 className='h-4 w-4' />
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Add Row Button */}
+            <Button
+                type='button'
+                variant='outline'
+                onClick={handleAddRow}
+                disabled={disabled}
+                className='w-full border-2 border-dashed hover:border-solid hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300'
+            >
+                <Plus className='mr-2 h-4 w-4' />
+                Add Another Person
+            </Button>
+
+            {/* Shift Selector Dialog */}
+            {selectedCell && !disabled && (
+                <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm'>
+                    <div className='bg-white rounded-xl shadow-2xl p-6 w-[320px] border-2 border-slate-200'>
+                        <div className='mb-4'>
+                            <h3 className='text-lg font-bold text-slate-800'>
+                                Select Shift
+                            </h3>
+                            <p className='text-sm text-slate-500 mt-1'>
+                                Person {selectedCell.row + 1} •{' '}
+                                {DAY_NAMES[selectedCell.day]}
+                            </p>
+                        </div>
+                        <div className='grid grid-cols-2 gap-3 mb-4'>
+                            {SHIFT_OPTIONS.map((shift) => (
+                                <button
+                                    key={shift.value}
+                                    type='button'
+                                    onClick={() =>
+                                        handleShiftChange(
+                                            shift.value.toString()
+                                        )
+                                    }
+                                    className={cn(
+                                        'py-4 px-4 rounded-lg border-2 text-sm font-bold transition-all',
+                                        'hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary',
+                                        shift.color
+                                    )}
+                                >
+                                    {shift.label}
+                                </button>
+                            ))}
+                        </div>
+                        <Button
+                            type='button'
+                            variant='outline'
+                            onClick={() => setSelectedCell(null)}
+                            className='w-full border-2 hover:bg-slate-100'
+                        >
+                            Cancel
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}

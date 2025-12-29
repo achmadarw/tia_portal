@@ -1,0 +1,10 @@
+export interface Shift {
+    id: number;
+    name: string;
+    start_time: string;
+    end_time: string;
+    color: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+}
