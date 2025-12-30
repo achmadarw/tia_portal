@@ -25,6 +25,8 @@ import {
     Sparkles,
     Library,
     CalendarDays,
+    RotateCcw,
+    FileDown,
 } from 'lucide-react';
 import { format, addMonths, subMonths } from 'date-fns';
 import { PatternManagementModal } from '@/components/patterns/pattern-management-modal';
@@ -203,6 +205,220 @@ export default function AssignmentsPage() {
         setHasChanges(true);
     };
 
+    const handleReset = () => {
+        if (
+            confirm(
+                'Are you sure you want to reset all assignments to their saved state?'
+            )
+        ) {
+            setAssignments({});
+            setHasChanges(false);
+            isInitializedRef.current = false;
+        }
+    };
+
+    const handleExportPDF = async () => {
+        try {
+            // Check if roster has been generated
+            if (!shiftAssignments || shiftAssignments.length === 0) {
+                alert('Please generate roster first before exporting to PDF');
+                return;
+            }
+
+            console.log('🔍 Shift assignments data:', {
+                count: shiftAssignments.length,
+                sample: shiftAssignments.slice(0, 3),
+                firstItem: shiftAssignments[0],
+                firstItemKeys: shiftAssignments[0]
+                    ? Object.keys(shiftAssignments[0])
+                    : [],
+                allDates: shiftAssignments
+                    .map((a) => ({
+                        shift_date: a.shift_date,
+                        date: a.date,
+                        assignment_date: a.assignment_date,
+                        parsed: a.shift_date
+                            ? new Date(a.shift_date).getDate()
+                            : 'N/A',
+                        user: a.user_name,
+                        shiftId: a.shift_id,
+                    }))
+                    .slice(0, 10),
+            });
+
+            const monthStr = format(selectedMonth, 'MMMM yyyy').toUpperCase();
+
+            // Get number of days in month
+            const daysInMonth = new Date(
+                selectedMonth.getFullYear(),
+                selectedMonth.getMonth() + 1,
+                0
+            ).getDate();
+
+            // Day names mapping
+            const dayNamesMap: Record<number, string> = {
+                0: 'M', // Minggu
+                1: 'S', // Senin
+                2: 'S', // Selasa
+                3: 'R', // Rabu
+                4: 'K', // Kamis
+                5: 'J', // Jumat
+                6: 'S', // Sabtu
+            };
+
+            // Prepare day names array
+            const dayNames: string[] = [];
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(
+                    selectedMonth.getFullYear(),
+                    selectedMonth.getMonth(),
+                    day
+                );
+                const dayOfWeek = date.getDay();
+                dayNames.push(dayNamesMap[dayOfWeek]);
+            }
+
+            // Group shift assignments by user
+            const userShifts: Record<
+                number,
+                { user_name: string; shifts: Record<number, number> }
+            > = {};
+
+            console.log('🔧 Shifts master data:', {
+                shiftsCount: shifts?.length,
+                shiftsData: shifts,
+            });
+
+            shiftAssignments.forEach((assignment) => {
+                if (!userShifts[assignment.user_id]) {
+                    userShifts[assignment.user_id] = {
+                        user_name: assignment.user_name,
+                        shifts: {},
+                    };
+                }
+                // Extract day from date (1-31) - use assignment_date field
+                const day = new Date(assignment.assignment_date).getDate();
+                userShifts[assignment.user_id].shifts[day] =
+                    assignment.shift_id;
+
+                console.log(
+                    `Assignment: user=${assignment.user_name}, date=${assignment.assignment_date}, day=${day}, shift_id=${assignment.shift_id}`
+                );
+            });
+
+            console.log('👥 User shifts grouped:', {
+                userCount: Object.keys(userShifts).length,
+                firstUser: Object.values(userShifts)[0],
+            });
+
+            // Convert to sorted array and prepare data for backend
+            const usersData = Object.entries(userShifts)
+                .map(([userId, data]) => ({
+                    user_id: parseInt(userId),
+                    user_name: data.user_name,
+                    shifts: data.shifts,
+                }))
+                .sort((a, b) => a.user_name.localeCompare(b.user_name))
+                .map((userData) => {
+                    const userShiftsArray = [];
+                    console.log(`Processing user ${userData.user_name}:`, {
+                        shiftsObject: userData.shifts,
+                        daysInMonth,
+                    });
+
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        const shiftId = userData.shifts[day];
+
+                        if (shiftId === 0) {
+                            userShiftsArray.push({
+                                day,
+                                shiftCode: 'O',
+                                isOff: true,
+                            });
+                        } else if (shiftId) {
+                            const shift = shifts?.find((s) => s.id === shiftId);
+                            const shiftCode = shift?.code || shift?.name || '?';
+                            console.log(
+                                `Day ${day}: shift_id=${shiftId}, found shift:`,
+                                shift,
+                                `code: ${shiftCode}`
+                            );
+                            userShiftsArray.push({
+                                day,
+                                shiftCode,
+                                isOff: false,
+                            });
+                        } else {
+                            console.log(
+                                `Day ${day}: No shift assignment (shiftId is undefined/null)`
+                            );
+                            userShiftsArray.push({
+                                day,
+                                shiftCode: '',
+                                isOff: false,
+                            });
+                        }
+                    }
+                    return {
+                        name: userData.user_name.toUpperCase(),
+                        shifts: userShiftsArray,
+                    };
+                });
+
+            console.log('📊 Final users data for PDF:', {
+                userCount: usersData.length,
+                firstUserShifts: usersData[0]?.shifts.slice(0, 5),
+            });
+
+            // Call backend API to generate PDF
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/roster/export-pdf`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        month: monthStr,
+                        daysInMonth,
+                        dayNames,
+                        users: usersData,
+                    }),
+                }
+            );
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    alert('Session expired. Please login again.');
+                    localStorage.removeItem('token');
+                    window.location.href = '/login';
+                    return;
+                }
+
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to generate PDF');
+            }
+
+            // Get PDF blob and trigger download
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Roster-${format(selectedMonth, 'MMMM-yyyy')}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error exporting PDF:', error);
+            alert(
+                `Failed to export PDF: ${
+                    error instanceof Error ? error.message : 'Unknown error'
+                }`
+            );
+        }
+    };
+
     // Combine users with existing assignments
     const userAssignments = useMemo(() => {
         if (!users) return [];
@@ -293,6 +509,16 @@ export default function AssignmentsPage() {
                                         Auto Assign
                                     </Button>
                                     <Button
+                                        variant='outline'
+                                        size='sm'
+                                        onClick={handleReset}
+                                        disabled={!hasChanges}
+                                        className='shadow-sm'
+                                    >
+                                        <RotateCcw className='h-4 w-4 mr-2' />
+                                        Reset
+                                    </Button>
+                                    <Button
                                         size='sm'
                                         onClick={handleSave}
                                         disabled={
@@ -303,6 +529,20 @@ export default function AssignmentsPage() {
                                     >
                                         <Save className='h-4 w-4 mr-2' />
                                         Save
+                                    </Button>
+                                    <Button
+                                        variant='outline'
+                                        size='sm'
+                                        onClick={handleExportPDF}
+                                        disabled={
+                                            isLoading ||
+                                            !userAssignments ||
+                                            userAssignments.length === 0
+                                        }
+                                        className='shadow-sm'
+                                    >
+                                        <FileDown className='h-4 w-4 mr-2' />
+                                        Export PDF
                                     </Button>
                                     <Button
                                         size='sm'
