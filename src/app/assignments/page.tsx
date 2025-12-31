@@ -40,6 +40,7 @@ export default function AssignmentsPage() {
     const [hasChanges, setHasChanges] = useState(false);
     const [patternModalOpen, setPatternModalOpen] = useState(false);
     const [shiftModalOpen, setShiftModalOpen] = useState(false);
+    const [isExportingPDF, setIsExportingPDF] = useState(false);
     const isInitializedRef = useRef(false);
 
     const queryClient = useQueryClient();
@@ -218,12 +219,17 @@ export default function AssignmentsPage() {
     };
 
     const handleExportPDF = async () => {
+        // Prevent multiple simultaneous exports
+        if (isExportingPDF) return;
+
         try {
             // Check if roster has been generated
             if (!shiftAssignments || shiftAssignments.length === 0) {
                 alert('Please generate roster first before exporting to PDF');
                 return;
             }
+
+            setIsExportingPDF(true);
 
             console.log('🔍 Shift assignments data:', {
                 count: shiftAssignments.length,
@@ -445,6 +451,9 @@ export default function AssignmentsPage() {
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
+
+            // Success feedback
+            alert('PDF exported successfully!');
         } catch (error) {
             console.error('Error exporting PDF:', error);
             alert(
@@ -452,6 +461,8 @@ export default function AssignmentsPage() {
                     error instanceof Error ? error.message : 'Unknown error'
                 }`
             );
+        } finally {
+            setIsExportingPDF(false);
         }
     };
 
@@ -571,14 +582,43 @@ export default function AssignmentsPage() {
                                         size='sm'
                                         onClick={handleExportPDF}
                                         disabled={
+                                            isExportingPDF ||
                                             isLoading ||
                                             !userAssignments ||
                                             userAssignments.length === 0
                                         }
                                         className='shadow-sm'
                                     >
-                                        <FileDown className='h-4 w-4 mr-2' />
-                                        Export PDF
+                                        {isExportingPDF ? (
+                                            <>
+                                                <svg
+                                                    className='animate-spin -ml-1 mr-2 h-4 w-4'
+                                                    xmlns='http://www.w3.org/2000/svg'
+                                                    fill='none'
+                                                    viewBox='0 0 24 24'
+                                                >
+                                                    <circle
+                                                        className='opacity-25'
+                                                        cx='12'
+                                                        cy='12'
+                                                        r='10'
+                                                        stroke='currentColor'
+                                                        strokeWidth='4'
+                                                    ></circle>
+                                                    <path
+                                                        className='opacity-75'
+                                                        fill='currentColor'
+                                                        d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
+                                                    ></path>
+                                                </svg>
+                                                Generating...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <FileDown className='h-4 w-4 mr-2' />
+                                                Export PDF
+                                            </>
+                                        )}
                                     </Button>
                                     <Button
                                         size='sm'
