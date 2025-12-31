@@ -278,10 +278,14 @@ export default function AssignmentsPage() {
                 dayNames.push(dayNamesMap[dayOfWeek]);
             }
 
-            // Group shift assignments by user
+            // Group shift assignments by user WITH pattern data
             const userShifts: Record<
                 number,
-                { user_name: string; shifts: Record<number, number> }
+                {
+                    user_name: string;
+                    shifts: Record<number, number>;
+                    pattern_data?: number[];
+                }
             > = {};
 
             console.log('🔧 Shifts master data:', {
@@ -294,6 +298,7 @@ export default function AssignmentsPage() {
                     userShifts[assignment.user_id] = {
                         user_name: assignment.user_name,
                         shifts: {},
+                        pattern_data: (assignment as any).pattern_data, // Store pattern data
                     };
                 }
                 // Extract day from date (1-31) - use assignment_date field
@@ -317,12 +322,17 @@ export default function AssignmentsPage() {
                     user_id: parseInt(userId),
                     user_name: data.user_name,
                     shifts: data.shifts,
+                    pattern_data: data.pattern_data,
                 }))
                 .sort((a, b) => a.user_name.localeCompare(b.user_name))
                 .map((userData) => {
                     const userShiftsArray = [];
+                    const pattern = userData.pattern_data || [];
+                    const patternLength = pattern.length || 7;
+
                     console.log(`Processing user ${userData.user_name}:`, {
                         shiftsObject: userData.shifts,
+                        pattern: pattern,
                         daysInMonth,
                     });
 
@@ -349,14 +359,40 @@ export default function AssignmentsPage() {
                                 isOff: false,
                             });
                         } else {
-                            console.log(
-                                `Day ${day}: No shift assignment (shiftId is undefined/null)`
-                            );
-                            userShiftsArray.push({
-                                day,
-                                shiftCode: '',
-                                isOff: false,
-                            });
+                            // No shift assignment in DB - check pattern for OFF
+                            if (pattern.length > 0) {
+                                const patternIndex = (day - 1) % patternLength;
+                                const patternShiftId = pattern[patternIndex];
+
+                                if (patternShiftId === 0) {
+                                    console.log(
+                                        `Day ${day}: OFF detected from pattern`
+                                    );
+                                    userShiftsArray.push({
+                                        day,
+                                        shiftCode: 'O',
+                                        isOff: true,
+                                    });
+                                } else {
+                                    console.log(
+                                        `Day ${day}: No shift assignment (shiftId is undefined/null)`
+                                    );
+                                    userShiftsArray.push({
+                                        day,
+                                        shiftCode: '',
+                                        isOff: false,
+                                    });
+                                }
+                            } else {
+                                console.log(
+                                    `Day ${day}: No shift assignment (shiftId is undefined/null)`
+                                );
+                                userShiftsArray.push({
+                                    day,
+                                    shiftCode: '',
+                                    isOff: false,
+                                });
+                            }
                         }
                     }
                     return {
