@@ -260,7 +260,7 @@ export function RosterCalendarView({
                                         className={cn(
                                             'w-16 flex-shrink-0 p-2 text-center border-r border-gray-100 dark:border-gray-800',
                                             isWeekend &&
-                                                'bg-orange-50/50 dark:bg-orange-950/10'
+                                                'bg-red-100 dark:bg-red-950/30'
                                         )}
                                     >
                                         <div className='text-xs font-medium text-gray-900 dark:text-white'>
@@ -327,7 +327,7 @@ export function RosterCalendarView({
                                                 className={cn(
                                                     'w-16 flex-shrink-0 p-2 flex items-center justify-center border-r border-gray-100 dark:border-gray-800',
                                                     isWeekend &&
-                                                        'bg-gray-50/50 dark:bg-gray-900/50'
+                                                        'bg-red-100 dark:bg-red-900/70'
                                                 )}
                                             >
                                                 {user.pattern_id ? (
