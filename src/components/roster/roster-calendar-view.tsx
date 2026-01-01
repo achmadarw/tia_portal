@@ -99,47 +99,68 @@ export function RosterCalendarView({
     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
     // Calculate roster data for each user
-    const rosterData = userAssignments.map((assignment) => {
-        const pattern = patterns?.find((p) => p.id === assignment.pattern_id);
-
-        // Create shifts array for the month
-        const shifts = Array.from({ length: daysInMonth }, (_, dayIndex) => {
-            const day = dayIndex + 1;
-            const dateStr = format(
-                new Date(
-                    selectedMonth.getFullYear(),
-                    selectedMonth.getMonth(),
-                    day
-                ),
-                'yyyy-MM-dd'
+    const rosterData = useMemo(() => {
+        const data = userAssignments.map((assignment) => {
+            const pattern = patterns?.find(
+                (p) => p.id === assignment.pattern_id
             );
 
-            // Check if there's an actual shift assignment for this date
-            const actualAssignment = shiftAssignments.find(
-                (sa) =>
-                    sa.user_id === assignment.user_id &&
-                    sa.assignment_date === dateStr
+            // Create shifts array for the month
+            const shifts = Array.from(
+                { length: daysInMonth },
+                (_, dayIndex) => {
+                    const day = dayIndex + 1;
+                    const dateStr = format(
+                        new Date(
+                            selectedMonth.getFullYear(),
+                            selectedMonth.getMonth(),
+                            day
+                        ),
+                        'yyyy-MM-dd'
+                    );
+
+                    // Check if there's an actual shift assignment for this date
+                    const actualAssignment = shiftAssignments.find(
+                        (sa) =>
+                            sa.user_id === assignment.user_id &&
+                            sa.assignment_date === dateStr
+                    );
+
+                    if (actualAssignment) {
+                        // Use actual shift assignment from database
+                        return actualAssignment.shift_id;
+                    } else if (pattern) {
+                        // Fallback to pattern data if no actual assignment
+                        const patternIndex = dayIndex % 7;
+                        return pattern.pattern_data[patternIndex];
+                    } else {
+                        // No pattern and no assignment = OFF (0)
+                        return 0;
+                    }
+                }
             );
 
-            if (actualAssignment) {
-                // Use actual shift assignment from database
-                return actualAssignment.shift_id;
-            } else if (pattern) {
-                // Fallback to pattern data if no actual assignment
-                const patternIndex = dayIndex % 7;
-                return pattern.pattern_data[patternIndex];
-            } else {
-                // No pattern and no assignment = OFF (0)
-                return 0;
-            }
+            // Find first OFF day position (1-based day number)
+            const firstOffDay =
+                shifts.findIndex((shiftId) => shiftId === 0) + 1;
+
+            return {
+                ...assignment,
+                shifts,
+                pattern,
+                firstOffDay: firstOffDay || 999, // 999 if no OFF found
+            };
         });
 
-        return {
-            ...assignment,
-            shifts,
-            pattern,
-        };
-    });
+        // Sort by first OFF day position (cascading/staggered pattern)
+        return data.sort((a, b) => a.firstOffDay - b.firstOffDay);
+    }, [
+        userAssignments,
+        patterns,
+        daysInMonth,
+        selectedMonth,
+        shiftAssignments,
+    ]);
 
     // Calculate statistics dynamically based on available shifts
     const totalAssignments = userAssignments.filter((a) => a.pattern_id).length;
