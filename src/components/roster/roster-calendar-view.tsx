@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { format, getDaysInMonth } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ArrowUpDown } from 'lucide-react';
 import type { Shift } from '@/types/shift';
 
 interface Pattern {
@@ -44,6 +45,8 @@ interface RosterCalendarViewProps {
     onPrevMonth: () => void;
     onNextMonth: () => void;
     isLoading?: boolean;
+    sortOrder?: 'first' | 'last';
+    onSortOrderChange?: (order: 'first' | 'last') => void;
 }
 
 export function RosterCalendarView({
@@ -56,7 +59,24 @@ export function RosterCalendarView({
     onPrevMonth,
     onNextMonth,
     isLoading = false,
+    sortOrder: externalSortOrder,
+    onSortOrderChange,
 }: RosterCalendarViewProps) {
+    // Sort order state: 'first' or 'last'
+    // Use external sortOrder if provided, otherwise use internal state
+    const [internalSortOrder, setInternalSortOrder] = useState<
+        'first' | 'last'
+    >('first');
+    const sortOrder = externalSortOrder ?? internalSortOrder;
+
+    const handleSortOrderChange = (newOrder: 'first' | 'last') => {
+        if (onSortOrderChange) {
+            onSortOrderChange(newOrder);
+        } else {
+            setInternalSortOrder(newOrder);
+        }
+    };
+
     // Build shift configuration dynamically from shifts prop
     const shiftConfig: Record<
         number,
@@ -140,26 +160,47 @@ export function RosterCalendarView({
                 }
             );
 
-            // Find first OFF day position (1-based day number)
+            // Find first OFF day position and day of week
             const firstOffDay =
                 shifts.findIndex((shiftId) => shiftId === 0) + 1;
+
+            // Get day of week for first OFF (0=Sunday, 1=Monday, ..., 6=Saturday)
+            let offDayOfWeek = 0;
+            if (firstOffDay > 0 && firstOffDay <= 999) {
+                const offDate = new Date(
+                    selectedMonth.getFullYear(),
+                    selectedMonth.getMonth(),
+                    firstOffDay
+                );
+                offDayOfWeek = offDate.getDay();
+                // Convert Sunday (0) to 7 for proper sorting (closest to weekend)
+                if (offDayOfWeek === 0) offDayOfWeek = 7;
+            }
 
             return {
                 ...assignment,
                 shifts,
                 pattern,
                 firstOffDay: firstOffDay || 999, // 999 if no OFF found
+                offDayOfWeek, // 1=Monday, 2=Tuesday, ..., 6=Saturday, 7=Sunday
             };
         });
 
-        // Sort by first OFF day position (cascading/staggered pattern)
-        return data.sort((a, b) => a.firstOffDay - b.firstOffDay);
+        // Sort based on sortOrder state
+        if (sortOrder === 'first') {
+            // Sort by first OFF day number (1, 2, 3, ...)
+            return data.sort((a, b) => a.firstOffDay - b.firstOffDay);
+        } else {
+            // Sort by day of week descending (Sunday=7, Saturday=6, ..., Monday=1)
+            return data.sort((a, b) => b.offDayOfWeek - a.offDayOfWeek);
+        }
     }, [
         userAssignments,
         patterns,
         daysInMonth,
         selectedMonth,
         shiftAssignments,
+        sortOrder,
     ]);
 
     // Calculate statistics dynamically based on available shifts
@@ -194,14 +235,30 @@ export function RosterCalendarView({
         <div className='border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden'>
             {/* Month Selector - Fixed, tidak scroll */}
             <div className='flex items-center justify-between px-6 py-4 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800'>
-                <Button
-                    variant='outline'
-                    onClick={onPrevMonth}
-                    disabled={isLoading}
-                    size='sm'
-                >
-                    Previous
-                </Button>
+                <div className='flex items-center gap-2'>
+                    <Button
+                        variant='outline'
+                        onClick={onPrevMonth}
+                        disabled={isLoading}
+                        size='sm'
+                    >
+                        Previous
+                    </Button>
+                    <Button
+                        variant='outline'
+                        onClick={() =>
+                            handleSortOrderChange(
+                                sortOrder === 'first' ? 'last' : 'first'
+                            )
+                        }
+                        disabled={isLoading}
+                        size='sm'
+                        className='gap-2'
+                    >
+                        <ArrowUpDown className='h-4 w-4' />
+                        {sortOrder === 'first' ? 'First OFF' : 'Last OFF'}
+                    </Button>
+                </div>
                 <h3 className='text-2xl font-bold text-gray-900 dark:text-white'>
                     {format(selectedMonth, 'MMMM yyyy')}
                 </h3>

@@ -41,6 +41,7 @@ export default function AssignmentsPage() {
     const [patternModalOpen, setPatternModalOpen] = useState(false);
     const [shiftModalOpen, setShiftModalOpen] = useState(false);
     const [isExportingPDF, setIsExportingPDF] = useState(false);
+    const [sortOrder, setSortOrder] = useState<'first' | 'last'>('first');
     const isInitializedRef = useRef(false);
 
     const queryClient = useQueryClient();
@@ -290,7 +291,7 @@ export default function AssignmentsPage() {
                 {
                     user_name: string;
                     shifts: Record<number, number>;
-                    pattern_data?: number[];
+                    pattern_id: number | null;
                 }
             > = {};
 
@@ -299,12 +300,24 @@ export default function AssignmentsPage() {
                 shiftsData: shifts,
             });
 
+            // Initialize userShifts with all users from currentAssignments
+            currentAssignments?.forEach((assignment) => {
+                if (!userShifts[assignment.user_id]) {
+                    userShifts[assignment.user_id] = {
+                        user_name: assignment.user_name,
+                        shifts: {},
+                        pattern_id: assignment.pattern_id,
+                    };
+                }
+            });
+
+            // Populate with actual shift assignments from database
             shiftAssignments.forEach((assignment) => {
                 if (!userShifts[assignment.user_id]) {
                     userShifts[assignment.user_id] = {
                         user_name: assignment.user_name,
                         shifts: {},
-                        pattern_data: (assignment as any).pattern_data, // Store pattern data
+                        pattern_id: null,
                     };
                 }
                 // Extract day from date (1-31) - use assignment_date field
@@ -324,81 +337,147 @@ export default function AssignmentsPage() {
 
             // Convert to sorted array and prepare data for backend
             const usersData = Object.entries(userShifts)
-                .map(([userId, data]) => ({
-                    user_id: parseInt(userId),
-                    user_name: data.user_name,
-                    shifts: data.shifts,
-                    pattern_data: data.pattern_data,
-                }))
-                .sort((a, b) => a.user_name.localeCompare(b.user_name))
+                .map(([userId, data]) => {
+                    // Get pattern data for this user
+                    const pattern = patterns?.find(
+                        (p) => p.id === data.pattern_id
+                    );
+                    const patternData = pattern?.pattern_data || [];
+
+                    return {
+                        user_id: parseInt(userId),
+                        user_name: data.user_name,
+                        shifts: data.shifts,
+                        pattern_data: patternData,
+                        pattern_id: data.pattern_id,
+                    };
+                })
+                .map((userData) => {
+                    // Calculate first OFF day position and day of week for sorting
+                    // Use SAME LOGIC as calendar view
+                    const pattern = userData.pattern_data || [];
+                    const patternLength = pattern.length || 7;
+                    let firstOffDay = 999; // Default if no OFF found
+                    let offDayOfWeek = 0;
+
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        const dateStr = format(
+                            new Date(
+                                selectedMonth.getFullYear(),
+                                selectedMonth.getMonth(),
+                                day
+                            ),
+                            'yyyy-MM-dd'
+                        );
+
+                        // Check if there's an actual shift assignment for this date
+                        const actualAssignment = shiftAssignments.find(
+                            (sa) =>
+                                sa.user_id === userData.user_id &&
+                                sa.assignment_date === dateStr
+                        );
+
+                        let shiftId: number;
+                        if (actualAssignment) {
+                            // Use actual shift assignment from database
+                            shiftId = actualAssignment.shift_id;
+                        } else if (pattern.length > 0) {
+                            // Fallback to pattern data if no actual assignment
+                            const patternIndex = (day - 1) % patternLength;
+                            shiftId = pattern[patternIndex];
+                        } else {
+                            // No pattern and no assignment = OFF (0)
+                            shiftId = 0;
+                        }
+
+                        if (shiftId === 0 && firstOffDay === 999) {
+                            firstOffDay = day;
+                            // Get day of week (0=Sunday, 1=Monday, ..., 6=Saturday)
+                            const offDate = new Date(
+                                selectedMonth.getFullYear(),
+                                selectedMonth.getMonth(),
+                                day
+                            );
+                            offDayOfWeek = offDate.getDay();
+                            // Convert Sunday (0) to 7 for proper sorting
+                            if (offDayOfWeek === 0) offDayOfWeek = 7;
+                            break;
+                        }
+                    }
+
+                    return {
+                        ...userData,
+                        firstOffDay,
+                        offDayOfWeek, // 1=Monday, 2=Tuesday, ..., 6=Saturday, 7=Sunday
+                    };
+                })
+                .sort((a, b) => {
+                    // Sort based on sortOrder state
+                    if (sortOrder === 'first') {
+                        // Sort by first OFF day number (1, 2, 3, ...)
+                        return a.firstOffDay - b.firstOffDay;
+                    } else {
+                        // Sort by day of week descending (Sunday=7, Saturday=6, ..., Monday=1)
+                        return b.offDayOfWeek - a.offDayOfWeek;
+                    }
+                })
                 .map((userData) => {
                     const userShiftsArray = [];
                     const pattern = userData.pattern_data || [];
                     const patternLength = pattern.length || 7;
 
                     console.log(`Processing user ${userData.user_name}:`, {
-                        shiftsObject: userData.shifts,
+                        user_id: userData.user_id,
                         pattern: pattern,
                         daysInMonth,
                     });
 
+                    // Use SAME LOGIC as calendar view
                     for (let day = 1; day <= daysInMonth; day++) {
-                        const shiftId = userData.shifts[day];
+                        const dateStr = format(
+                            new Date(
+                                selectedMonth.getFullYear(),
+                                selectedMonth.getMonth(),
+                                day
+                            ),
+                            'yyyy-MM-dd'
+                        );
 
+                        // Check if there's an actual shift assignment for this date
+                        const actualAssignment = shiftAssignments.find(
+                            (sa) =>
+                                sa.user_id === userData.user_id &&
+                                sa.assignment_date === dateStr
+                        );
+
+                        let shiftId: number;
+                        if (actualAssignment) {
+                            // Use actual shift assignment from database
+                            shiftId = actualAssignment.shift_id;
+                        } else if (pattern.length > 0) {
+                            // Fallback to pattern data if no actual assignment
+                            const patternIndex = (day - 1) % patternLength;
+                            shiftId = pattern[patternIndex];
+                        } else {
+                            // No pattern and no assignment = OFF (0)
+                            shiftId = 0;
+                        }
+
+                        // Convert shift ID to shift code
                         if (shiftId === 0) {
                             userShiftsArray.push({
                                 day,
                                 shiftCode: 'O',
                                 isOff: true,
                             });
-                        } else if (shiftId) {
+                        } else {
                             const shift = shifts?.find((s) => s.id === shiftId);
                             const shiftCode = shift?.code || shift?.name || '?';
-                            console.log(
-                                `Day ${day}: shift_id=${shiftId}, found shift:`,
-                                shift,
-                                `code: ${shiftCode}`
-                            );
                             userShiftsArray.push({
                                 day,
                                 shiftCode,
                                 isOff: false,
                             });
-                        } else {
-                            // No shift assignment in DB - check pattern for OFF
-                            if (pattern.length > 0) {
-                                const patternIndex = (day - 1) % patternLength;
-                                const patternShiftId = pattern[patternIndex];
-
-                                if (patternShiftId === 0) {
-                                    console.log(
-                                        `Day ${day}: OFF detected from pattern`
-                                    );
-                                    userShiftsArray.push({
-                                        day,
-                                        shiftCode: 'O',
-                                        isOff: true,
-                                    });
-                                } else {
-                                    console.log(
-                                        `Day ${day}: No shift assignment (shiftId is undefined/null)`
-                                    );
-                                    userShiftsArray.push({
-                                        day,
-                                        shiftCode: '',
-                                        isOff: false,
-                                    });
-                                }
-                            } else {
-                                console.log(
-                                    `Day ${day}: No shift assignment (shiftId is undefined/null)`
-                                );
-                                userShiftsArray.push({
-                                    day,
-                                    shiftCode: '',
-                                    isOff: false,
-                                });
-                            }
                         }
                     }
                     return {
@@ -678,6 +757,8 @@ export default function AssignmentsPage() {
                                     onPrevMonth={handlePrevMonth}
                                     onNextMonth={handleNextMonth}
                                     isLoading={isLoading}
+                                    sortOrder={sortOrder}
+                                    onSortOrderChange={setSortOrder}
                                 />
                             )}
                         </CardContent>
