@@ -68,7 +68,7 @@ export function RosterCalendarView({
         > = {
             0: {
                 label: 'OFF',
-                color: '#9CA3AF',
+                color: '#EF4444',
                 shortLabel: 'O',
             },
         };
