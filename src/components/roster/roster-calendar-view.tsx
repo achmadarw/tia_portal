@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowUpDown } from 'lucide-react';
+import { ArrowUpDown, CalendarX2 } from 'lucide-react';
 import type { Shift } from '@/types/shift';
 
 interface Pattern {
@@ -409,20 +409,34 @@ export function RosterCalendarView({
                                                 )}
                                             >
                                                 {user.pattern_id ? (
-                                                    <div
-                                                        className='w-10 h-10 rounded-md flex items-center justify-center text-sm font-bold border transition-all hover:scale-110 cursor-pointer'
-                                                        style={{
-                                                            backgroundColor: `${currentShiftConfig.color}30`,
-                                                            borderColor:
-                                                                currentShiftConfig.color,
-                                                            color: currentShiftConfig.color,
-                                                        }}
-                                                        title={`${user.user_name} - ${currentShiftConfig.label}`}
-                                                    >
-                                                        {
-                                                            currentShiftConfig.shortLabel
-                                                        }
-                                                    </div>
+                                                    shift === 0 ? (
+                                                        // OFF day - tampilkan icon calendar dengan X merah
+                                                        <div
+                                                            className='w-10 h-10 rounded-md flex items-center justify-center transition-all hover:scale-110 cursor-pointer'
+                                                            title={`${user.user_name} - OFF`}
+                                                        >
+                                                            <CalendarX2
+                                                                className='w-7 h-7 text-red-500'
+                                                                strokeWidth={2}
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        // Shift aktif - tampilkan badge seperti biasa
+                                                        <div
+                                                            className='w-10 h-10 rounded-md flex items-center justify-center text-sm font-bold border transition-all hover:scale-110 cursor-pointer'
+                                                            style={{
+                                                                backgroundColor: `${currentShiftConfig.color}30`,
+                                                                borderColor:
+                                                                    currentShiftConfig.color,
+                                                                color: currentShiftConfig.color,
+                                                            }}
+                                                            title={`${user.user_name} - ${currentShiftConfig.label}`}
+                                                        >
+                                                            {
+                                                                currentShiftConfig.shortLabel
+                                                            }
+                                                        </div>
+                                                    )
                                                 ) : (
                                                     <div className='text-xs text-gray-300 dark:text-gray-700'>
                                                         -
