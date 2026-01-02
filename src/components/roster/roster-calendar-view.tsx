@@ -236,30 +236,14 @@ export function RosterCalendarView({
         <div className='border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden'>
             {/* Month Selector - Fixed, tidak scroll */}
             <div className='flex items-center justify-between px-6 py-4 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800'>
-                <div className='flex items-center gap-2'>
-                    <Button
-                        variant='outline'
-                        onClick={onPrevMonth}
-                        disabled={isLoading}
-                        size='sm'
-                    >
-                        Previous
-                    </Button>
-                    <Button
-                        variant='outline'
-                        onClick={() =>
-                            handleSortOrderChange(
-                                sortOrder === 'first' ? 'last' : 'first'
-                            )
-                        }
-                        disabled={isLoading}
-                        size='sm'
-                        className='gap-2'
-                    >
-                        <ArrowUpDown className='h-4 w-4' />
-                        {sortOrder === 'first' ? 'First OFF' : 'Last OFF'}
-                    </Button>
-                </div>
+                <Button
+                    variant='outline'
+                    onClick={onPrevMonth}
+                    disabled={isLoading}
+                    size='sm'
+                >
+                    Previous
+                </Button>
                 <h3 className='text-2xl font-bold text-gray-900 dark:text-white'>
                     {format(selectedMonth, 'MMMM yyyy')}
                 </h3>
@@ -278,10 +262,24 @@ export function RosterCalendarView({
                 {/* Left Side - Personnel Column (Fixed) */}
                 <div className='w-64 flex-shrink-0 border-r border-gray-200 dark:border-gray-800'>
                     {/* Personnel Header */}
-                    <div className='bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-3'>
+                    <div className='bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-3 flex items-center justify-between'>
                         <span className='text-sm font-semibold text-gray-900 dark:text-white'>
                             Personnel
                         </span>
+                        <Button
+                            variant='outline'
+                            onClick={() =>
+                                handleSortOrderChange(
+                                    sortOrder === 'first' ? 'last' : 'first'
+                                )
+                            }
+                            disabled={isLoading}
+                            size='sm'
+                            className='gap-2 h-7 text-xs'
+                        >
+                            <ArrowUpDown className='h-3 w-3' />
+                            {sortOrder === 'first' ? 'First OFF' : 'Last OFF'}
+                        </Button>
                     </div>
 
                     {/* Personnel Rows */}
