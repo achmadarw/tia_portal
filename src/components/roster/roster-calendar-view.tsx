@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowUpDown, CalendarX2 } from 'lucide-react';
 import type { Shift } from '@/types/shift';
+import { getShiftColorVariants } from '@/utils/color-utils';
 
 interface Pattern {
     id: number;
@@ -421,21 +422,30 @@ export function RosterCalendarView({
                                                             />
                                                         </div>
                                                     ) : (
-                                                        // Shift aktif - tampilkan badge seperti biasa
-                                                        <div
-                                                            className='w-10 h-10 rounded-md flex items-center justify-center text-sm font-bold border transition-all hover:scale-110 cursor-pointer'
-                                                            style={{
-                                                                backgroundColor: `${currentShiftConfig.color}30`,
-                                                                borderColor:
-                                                                    currentShiftConfig.color,
-                                                                color: currentShiftConfig.color,
-                                                            }}
-                                                            title={`${user.user_name} - ${currentShiftConfig.label}`}
-                                                        >
-                                                            {
-                                                                currentShiftConfig.shortLabel
-                                                            }
-                                                        </div>
+                                                        // Shift aktif - tampilkan badge dengan warna dinamis dari database
+                                                        (() => {
+                                                            const colors =
+                                                                getShiftColorVariants(
+                                                                    currentShiftConfig.color
+                                                                );
+                                                            return (
+                                                                <div
+                                                                    className='w-10 h-10 rounded-md flex items-center justify-center text-sm font-bold border-2 transition-all hover:scale-110 cursor-pointer'
+                                                                    style={{
+                                                                        backgroundColor:
+                                                                            colors.bg,
+                                                                        borderColor:
+                                                                            colors.border,
+                                                                        color: colors.text,
+                                                                    }}
+                                                                    title={`${user.user_name} - ${currentShiftConfig.label}`}
+                                                                >
+                                                                    {
+                                                                        currentShiftConfig.shortLabel
+                                                                    }
+                                                                </div>
+                                                            );
+                                                        })()
                                                     )
                                                 ) : (
                                                     <div className='text-xs text-gray-300 dark:text-gray-700'>
