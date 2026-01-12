@@ -241,11 +241,9 @@ export default function AssignmentsPage() {
                     : [],
                 allDates: shiftAssignments
                     .map((a) => ({
-                        shift_date: a.shift_date,
-                        date: a.date,
                         assignment_date: a.assignment_date,
-                        parsed: a.shift_date
-                            ? new Date(a.shift_date).getDate()
+                        parsed: a.assignment_date
+                            ? new Date(a.assignment_date).getDate()
                             : 'N/A',
                         user: a.user_name,
                         shiftId: a.shift_id,
