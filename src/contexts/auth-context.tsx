@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import apiClient from '@/lib/api-client';
 
 interface User {
     id: number;
@@ -44,19 +45,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     const login = async (email: string, password: string) => {
-        const response = await fetch('http://localhost:3008/api/auth/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, password }),
+        const response = await apiClient.post('/auth/login', {
+            email,
+            password,
         });
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.message || 'Login failed');
-        }
+        const data = response.data;
 
         // Store tokens and user
         localStorage.setItem('accessToken', data.accessToken);
