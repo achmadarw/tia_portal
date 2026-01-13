@@ -4,7 +4,9 @@ import axios, {
     InternalAxiosRequestConfig,
 } from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL =
+    process.env.NEXT_PUBLIC_API_URL ||
+    'https://tiasecuritybackend-production.up.railway.app/api';
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({

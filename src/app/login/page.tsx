@@ -70,12 +70,6 @@ export default function LoginPage() {
                     {/* Left side - Branding */}
                     <div className='hidden lg:block space-y-8'>
                         <div className='space-y-4'>
-                            <div className='inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20'>
-                                <Sparkles className='h-4 w-4 text-blue-400' />
-                                <span className='text-sm font-medium text-gray-700 dark:text-gray-300'>
-                                    Powered by AI & Biometric Technology
-                                </span>
-                            </div>
                             <h1 className='text-6xl font-bold text-gray-900 dark:text-white leading-tight'>
                                 Welcome to{' '}
                                 <span className='bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'>
